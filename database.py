@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 import os
 
 # Obtener las variables de entorno
-COSMOS_ENDPOINT = 'https://acdbcncevaluacion.documents.azure.com:443/'
-COSMOS_KEY = 'VRqqmuIC5pQMt4oLyXdqjlZj1Lk08chanLGEAA3fJSVQWkjEWgf8wpLCAjPFRuq2cMmZfGuXKEx0ACDb7jZxCw=='
+COSMOS_ENDPOINT = ''
+COSMOS_KEY = ''
 DATABASE_NAME = 'GestorProyectosDB'
 CONTAINER_USUARIOS = 'usuarios'
 CONTAINER_PROYECTOS = 'proyectos'

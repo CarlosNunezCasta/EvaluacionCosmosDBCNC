@@ -3,151 +3,101 @@ from typing import List, Optional
 from models import Usuario, Proyecto
 from azure.cosmos import exceptions
 from datetime import datetime
-from database import container
+from database import container_usuario,container_proyecto
 
-app = FastAPI(title='API de Gestion de Usuarios y Proyectos')
+app = FastAPI(title='API de Gestion de Usuarios y proyectos')
 
-### Endpoint de Users
-
-@app.get("/")
-def home():
-    return "Hola Mundo"
-
-#Crear usuario
-@app.post("/users/", response_model=Usuario, status_code=201)
-def create_event(event: Usuario):
+###USUARIOS###
+#Crear usuario POST
+@app.post("/usuarios/", response_model=Usuario, status_code=201)
+def create_usuario(usuario: Usuario):
     try:
-        container.create_item(body=event.dict())
-        return event
+        container_usuario.create_item(body=usuario.dict())
+        return usuario
     except exceptions.CosmosResourceExistsError:
-        raise HTTPException(status_code=400, detail="El evento con este ID ya existe")
+        raise HTTPException(status_code=400, detail="El usuario con este ID ya existe")
     except exceptions.CosmosHttpResponseError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-#Obtener evento
-@app.get("/events/{event_id}",response_model=Evento)
-def get_event(event_id: str = Path(...,description="ID del evento a recuperar")):
-    try:
-        event = container.read_item(item=event_id,partition_key=event_id)
-        return event
-    except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=400, detail="Evento no encontrado")
-    except exceptions.CosmosHttpResponseError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-#Listar eventos
-@app.get("/events/", response_model=List[Evento])
-def list_event():
-    query = "SELECT * FROM c WHERE 1=1"
-    items = list(container.query_items(query=query, enable_cross_partition_query=True))
+        raise HTTPException(status_code=400, detail=str(e))    
+    
+#Obtener usuario GET
+@app.get("/usuarios", response_model=List[Usuario])
+def get_usuarios():
+    query = "SELECT * FROM c"
+    items = list(container_usuario.query_items(query = query, enable_cross_partition_query=True))
     return items
 
-#Actualizar evento
-@app.put("/events/{event_id}",response_model=Evento)
-def update_event(event_id: str,updated_event: Evento):
-    existing_event = container.read_item(item=event_id,partition_key=event_id)
-    existing_event.update(update_event.dict(exclude_unset=True))
-
-##Endpoint de Participante
-
-@app.post("/events/{event_id}/participants/",response_model=Participante, status_code=201)
-def add_participant(event_id: str, participant: Participante):
+#Actualizar usuario PUT
+@app.put("/usuarios/{usuario_id}", response_model=Usuario)
+def update_usuario(usuario_id:str, updated_usuario: Usuario):
     try:
-        event = container.read_item(item=event_id, partition_key=event_id)
+        existing_usuario = container_usuario.read_item(item=usuario_id, partition_key=usuario_id)
+        existing_usuario.update(updated_usuario.dict(exclude_unset=True))
+        container_usuario.replace_item(item=usuario_id, body=existing_usuario)
+        return existing_usuario
+    except exceptions.CosmosResourceNotFoundError:
+        raise HTTPException(status_code=404, detail='Usuario no encotrado')
+    except exceptions.CosmosHttpResponseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-        if len(event['participants']) >= event['capacity']:
-            raise HTTPException(status_code=400, detail='Capacidad maxima del evento alcanzado')
-        
-        if any( p['id'] == participant.id for p in event['participants'] ):
-            raise HTTPException(status_code=400, detail='El participante con este ID ya esta inscrito')
+#Eliminar usuario DELETE
+@app.delete("/usuarios/{usuario_id}", status_code=204)
+def delete_usuario(usuario_id: str):
+    try:
+        container_usuario.delete_item(item=usuario_id, partition_key=usuario_id)
+        return
+    except exceptions.CosmosResourceNotFoundError:
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
+    except exceptions.CosmosHttpResponseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-        event['participants'].append(participant.dict())
-
-        container.replace_item(item=event_id, body=event)
-
-        return participant
+###PROYECTOS###
+#Crear proyecto POST
+@app.post("/proyectos/",response_model=Proyecto, status_code=201)
+def add_proyecto(proyecto: Proyecto):
+    try:
+        usuario = container_usuario.read_item(item=proyecto.id_usuario, partition_key=proyecto.id_usuario)
+        container_proyecto.create_item(body=proyecto.dict())
+        return proyecto
     except exceptions.CosmosResourceNotFoundError:
         raise HTTPException(status_code=400, detail="Evento no encontrado")
+    except exceptions.CosmosHttpResponseError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+#Listar Proyectos GET
+@app.get("/proyectos/", response_model=List[Proyecto])
+def Listar_Proyectos():
+    query = "SELECT * FROM c"
+    items = list(container_proyecto.query_items(query=query, enable_cross_partition_query=True))
+    return items
+
+#Listar Proyectos por usuario GET
+@app.get("/proyectos/{id_usuario}", response_model=List[Proyecto])
+def Listar_Proyectos(id_usuario: str):
+    query = f"SELECT * FROM c WHERE c.id_usuario= '{id_usuario}'"
+    items = list(container_proyecto.query_items(query=query, enable_cross_partition_query=True))
+    return items
+
+#Actualizar proyecto PUT
+@app.put("/proyecto/{proyect_id}", response_model=Proyecto)
+def update_proyecto(proyect_id:str, updated_usuario: Proyecto):
+    try:
+        existing_proyecto = container_proyecto.read_item(item=proyect_id, partition_key=proyect_id)
+        existing_proyecto.update(updated_usuario.dict(exclude_unset=True))
+        container_proyecto.replace_item(item=proyect_id, body=existing_proyecto)
+
+        return existing_proyecto
+    except exceptions.CosmosResourceNotFoundError:
+        raise HTTPException(status_code=404, detail='Proyecto no encotrado')
     except exceptions.CosmosHttpResponseError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@app.get("/events/{event_id}/participants/{participant_id}")
-def get_participant(event_id: str, participant_id: str):
-
+#Eliminar proyecto DELETE
+@app.delete("/proyecto/{proyect_id}", status_code=204)
+def delete_proyecto(proyect_id: str):
     try:
-        event = container.read_item(item=event_id, partition_key=event_id)
-
-        participant = next((p for p in event['participants'] if p['id'] == participant_id), None)
-
-        if participant:
-            return participant
-        else:
-            raise HTTPException(status_code=400, detail='Participante no encontrado')
-    except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=400, detail="Evento no encontrado")
-    except exceptions.CosmosHttpResponseError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/events/{event_id}/participants/", response_model=List[Participante])
-def list_participante(event_id: str):
-    try:
-        event = container.read_item(item=event_id, partition_key=event_id)
-
-        participants = event.get('participants',[])
-
-        return participants
-    except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=400, detail="Evento no encontrado")
-    except exceptions.CosmosHttpResponseError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.put("/events/{event_id}/participants/{participant_id}", response_model=Participante)
-def update_participant(event_id: str, participant_id: str, updated_participant: Participante):
- 
-    try:
-        event = container.read_item(item=event_id, partition_key=event_id)
-        participant = next((p for p in event['participants'] if p['id'] == participant_id), None)
- 
-        if not participant:
-            raise HTTPException(status_code=404, detail= "Participante no encontrado")
-        
-        participant.update(updated_participant.dict(exclude_unset=True))
- 
-        # for p in event['participants']:
- 
-        #     if p['id'] != participant_id:
-        #         lista_nueva.append(p)
-        #     else:
-        #         lista_nueva.append(participant)
- 
- 
-        event['participants'] = [ p if p['id'] != participant_id else participant for p in event['participants']]
- 
-        container.replace_item(item=event_id, body=event)
- 
-        return participant
-        
-    except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=404, detail='Evento no encotrado')
-    except exceptions.CosmosHttpResponseError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-        
-@app.delete("/events/{event_id}/participants/{participant_id}", status_code=204)
-def delete_participant(event_id: str, participant_id: str):
- 
-    try:
- 
-        event = container.read_item(item=event_id, partition_key=event_id)
-        participant = next((p for p in event['participants'] if p['id'] == participant_id), None)
- 
-        if not participant:
-            raise HTTPException(status_code=404, detail='Participante no encontrado')
-        
-        event['participants'] = [ p for p in event['participants'] if p['id'] != participant_id]
- 
-        container.replace_item(item=event_id, body=event)
+        container_proyecto.delete_item(item=proyect_id, partition_key=proyect_id)
         return
     except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=404, detail='Evento no encotrado')
+        raise HTTPException(status_code=404, detail='Proyecto no encontrado')
     except exceptions.CosmosHttpResponseError as e:
         raise HTTPException(status_code=400, detail=str(e))

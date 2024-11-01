@@ -5,9 +5,9 @@ from azure.cosmos import exceptions
 from datetime import datetime
 from database import container_usuario,container_proyecto
 
-app = FastAPI(title='API de Gestion de Usuarios y proyectos')
+app = FastAPI(title='API de Gestion de Usuarios y Proyectos')
 
-###USUARIOS###
+###USUARIOS
 #Crear usuario POST
 @app.post("/usuarios/", response_model=Usuario, status_code=201)
 def create_usuario(usuario: Usuario):
@@ -15,7 +15,7 @@ def create_usuario(usuario: Usuario):
         container_usuario.create_item(body=usuario.dict())
         return usuario
     except exceptions.CosmosResourceExistsError:
-        raise HTTPException(status_code=400, detail="El usuario con este ID ya existe")
+        raise HTTPException(status_code=400, detail="El usuario ya existe")
     except exceptions.CosmosHttpResponseError as e:
         raise HTTPException(status_code=400, detail=str(e))    
     
@@ -50,7 +50,7 @@ def delete_usuario(usuario_id: str):
     except exceptions.CosmosHttpResponseError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-###PROYECTOS###
+###PROYECTOS
 #Crear proyecto POST
 @app.post("/proyectos/",response_model=Proyecto, status_code=201)
 def add_proyecto(proyecto: Proyecto):
@@ -59,7 +59,7 @@ def add_proyecto(proyecto: Proyecto):
         container_proyecto.create_item(body=proyecto.dict())
         return proyecto
     except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=400, detail="Evento no encontrado")
+        raise HTTPException(status_code=400, detail="Proyecto no encontrado")
     except exceptions.CosmosHttpResponseError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -87,7 +87,7 @@ def update_proyecto(proyect_id:str, updated_usuario: Proyecto):
 
         return existing_proyecto
     except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=404, detail='Proyecto no encotrado')
+        raise HTTPException(status_code=404, detail='Proyecto no encontrado')
     except exceptions.CosmosHttpResponseError as e:
         raise HTTPException(status_code=400, detail=str(e))
     

@@ -1,7 +1,11 @@
 # EvaluacionCosmosDBCNC
-# Instrucciones de ejecucion para cada caso:
 # Repositorio GitHub: CarlosNunezCasta/EvaluacionCosmosDBCNC
 # Base de Datos Cosmos: acdbcncevaluacion
+# En database.py Reemplazar los valores de:
+#    COSMOS_ENDPOINT por URI de la BD Cosmos
+#    COSMOS_KEY por Primary Key de la BD Cosmos
+# Al abrir el navegador al final del url añadir /docs
+# Instrucciones de Ejecucion:
 # Usuarios:
 # GET /usuarios/: Obtener la lista completa de usuarios - Sin Parametros
 # POST /usuarios/: Crear un nuevo usuario - Valores de campos de Usuario

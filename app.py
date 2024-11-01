@@ -7,6 +7,11 @@ from database import container_usuario,container_proyecto
 
 app = FastAPI(title='API de Gestion de Usuarios y Proyectos')
 
+### Endpoint de Eventos
+@app.get("/")
+def home():
+    return "Gestion de Usuarios y Proyectos"
+
 ###USUARIOS
 #Crear usuario POST
 @app.post("/usuarios/", response_model=Usuario, status_code=201)
